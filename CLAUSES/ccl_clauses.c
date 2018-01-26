@@ -179,7 +179,7 @@ Clause_p clause_copy_meta(Clause_p clause)
    handle->parent2     = NULL;
    handle->pred        = NULL;
    handle->succ        = NULL;
-   handle->watch_proof = clause->watch_proof;
+   handle->watch_proofs    = NumTreeCopy(clause->watch_proofs);
    handle->watch_relevance = clause->watch_relevance;
 
    return handle;
@@ -290,7 +290,7 @@ Clause_p EmptyClauseAlloc(void)
    handle->set         = NULL;
    handle->pred        = NULL;
    handle->succ        = NULL;
-   handle->watch_proof = -1;
+   handle->watch_proofs    = NULL;
    handle->watch_relevance = 0.0;
 
    return handle;

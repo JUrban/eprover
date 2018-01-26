@@ -158,7 +158,7 @@ typedef struct clause_cell
    struct clause_cell*   pred;        /* For clause sets = doubly  */
    struct clause_cell*   succ;        /* linked lists */
 
-   long         watch_proof;          /* Proof number this clause comes from
+   NumTree_p    watch_proofs;         /* Proof numbers this clause comes from
                                          (only for watchlist clauses) */
    double       watch_relevance;      /* Watchlist relevance (only for
                                          generated clauses) */

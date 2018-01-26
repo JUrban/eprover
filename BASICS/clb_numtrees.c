@@ -334,6 +334,22 @@ bool NumTreeStore(NumTree_p *root, long key, IntOrP val1, IntOrP val2)
    return true;
 }
 
+NumTree_p NumTreeCopy(NumTree_p root)
+{
+   NumTree_p node;
+   NumTree_p copy = NULL;
+   PStack_p stack;
+
+   stack = NumTreeTraverseInit(root);
+   while((node = NumTreeTraverseNext(stack)))
+   {
+      NumTreeStore(&copy, node->key, node->val1, node->val2);
+   }
+   NumTreeTraverseExit(stack);
+
+   return copy;
+}
+
 /*-----------------------------------------------------------------------
 //
 // Function: NumTreeDebugPrint()

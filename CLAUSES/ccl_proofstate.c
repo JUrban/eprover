@@ -334,7 +334,7 @@ PStack_p ProofStateLoadWatchlistDir(ProofState_p state,
    ClauseSet_p watchlist;
    FormulaSet_p fset;
    DStr_p filename;
-   Clause_p handle;
+   //Clause_p handle;
    long proof_no = 0;
 
    watchlists = PStackAlloc();
@@ -394,13 +394,13 @@ PStack_p ProofStateLoadWatchlistDir(ProofState_p state,
       ClauseSetSortLiterals(watchlist, EqnSubsumeInverseCompareRef);
       ClauseSetDocInital(GlobalOut, OutputLevel, watchlist);
 
-      // set the origin proof number
-      for(handle = watchlist->anchor->succ; 
-          handle != watchlist->anchor; 
-          handle = handle->succ)
-      {
-         handle->watch_proof = proof_no;
-      }
+      //// set the origin proof number
+      //for(handle = watchlist->anchor->succ; 
+      //    handle != watchlist->anchor; 
+      //    handle = handle->succ)
+      //{
+      //   handle->watch_proof = proof_no;
+      //}
       
       if (OutputLevel >= 1)
       {
@@ -490,6 +490,7 @@ void ProofStateInitWatchlistDir(ProofState_p state,
                                 PStack_p watchlists)
 {
    ClauseSet_p tmpwatch;
+   Clause_p clause, repr;
    IntOrP val1, val2;
    long proof_no;
 
@@ -522,7 +523,37 @@ void ProofStateInitWatchlistDir(ProofState_p state,
       NumTreeStore(&state->watch_progress, proof_no, val1, val2);
 
       // insert clauses into a global watchlist
-      ClauseSetIndexedInsertClauseSet(state->watchlist, tmpwatch);
+      //ClauseSetIndexedInsertClauseSet(state->watchlist, tmpwatch);
+      
+      // go throught the clauses from the input watchlist
+      while (!ClauseSetEmpty(tmpwatch))
+      {
+         // take a clause from the input watchlist
+         clause = ClauseSetExtractFirst(tmpwatch);
+         // is the clause already in the global watchlist?
+         repr = ClauseSetFindVariantClause(state->watchlist, clause);
+         if (repr)
+         {
+            // if yes, just free the clause because it's redundant
+            
+            //fprintf(GlobalOut, "Redundant: ");
+            //ClausePrint(GlobalOut,repr,true);
+            //fprintf(GlobalOut, "\n");
+
+            ClauseFree(clause);
+         }
+         else 
+         {
+            // otherwise put it into the global watchlist
+            ClauseSetIndexedInsertClause(state->watchlist, clause);
+            repr = clause;
+         }
+         // mark this clause as appearing in proof number "proof_no"
+         val1.i_val = 0;
+         val2.i_val = 0;
+         NumTreeStore(&repr->watch_proofs, proof_no, val1, val2);
+      } 
+
       ClauseSetFree(tmpwatch);
    }
   

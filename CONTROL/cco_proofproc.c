@@ -108,24 +108,39 @@ static void check_ac_status(ProofState_p state, ProofControl_p
 */
 
 static double watch_progress_update(Clause_p watch_clause, 
-                                    NumTree_p* watch_progress)
+                                    NumTree_p* watch_progress,
+                                    long* proof_no)
 {
    NumTree_p proof;
+   NumTree_p node;
+   PStack_p stack;
+   double relevance = -1.0;
 
-   assert(watch_clause->watch_proof != -1);
-
-   // find the proof progress statistics ...
-   proof = NumTreeFind(watch_progress, watch_clause->watch_proof);
-   if (!proof) 
+   // traverse the proofs in which the watch_clause appears:
+   stack = NumTreeTraverseInit(watch_clause->watch_proofs);
+   while((node = NumTreeTraverseNext(stack)))
    {
-      Error("Unknown proof number (%ld) of a watchlist clause! Should not happen!", 
-         OTHER_ERROR, watch_clause->watch_proof);
+      // watch_clause appears in proof number node->key ...
+      // ... so find the proof progress statistics ...
+      proof = NumTreeFind(watch_progress, node->key);
+      if (!proof) 
+      {
+         Error("Unknown proof number (%ld) of a watchlist clause! Should not happen!", 
+            OTHER_ERROR, node->key);
+      }
+      // ... and update it (val1 matched out of val2 total)
+      proof->val1.i_val++;
+            
+      double progress = (double)proof->val1.i_val/proof->val2.i_val;
+      if (progress > relevance)
+      {
+         *proof_no = node->key;
+         relevance = progress;
+      }
    }
-   
-   // ... and update it (val1 matched out of val2 total)
-   proof->val1.i_val++;
-   
-   return (double)proof->val1.i_val/proof->val2.i_val;
+   NumTreeTraverseExit(stack);
+
+   return relevance;
 }
 
 static void watch_progress_print(NumTree_p watch_progress)
@@ -196,10 +211,11 @@ static long remove_subsumed(GlobalIndices_p indices,
 
          if (*watch_progress) 
          {
-            progress = watch_progress_update(handle, watch_progress);
-            if ((best_proof_no < 0) || (progress > subsumer->clause->watch_relevance))
+            long proof_no = -1;
+            progress = watch_progress_update(handle, watch_progress, &proof_no);
+            if (progress > subsumer->clause->watch_relevance)
             {
-               best_proof_no = handle->watch_proof;
+               best_proof_no = proof_no;
             }
             subsumer->clause->watch_relevance = MAX(
                subsumer->clause->watch_relevance, progress);
