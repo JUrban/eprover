@@ -685,6 +685,11 @@ void ClauseFree(Clause_p junk)
    {
       PStackFree(junk->derivation);
    }
+   if(junk->watch_proofs)
+   {
+      NumTreeFree(junk->watch_proofs);
+      junk->watch_proofs = NULL;
+   }
    ClauseCellFree(junk);
 }
 
