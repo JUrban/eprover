@@ -921,11 +921,21 @@ EvalPriority PrioFunPreferWatchlistRelevant(Clause_p clause)
 {
    assert(clause);
 
-   if(ClauseQueryProp(clause, CPSubsumesWatch))
+   //if(ClauseQueryProp(clause, CPSubsumesWatch))
+   //{
+   //   return PrioWatchlistPrefer-(long)(1000*clause->watch_relevance);
+   //}
+   //return PrioWatchlistDefer;
+
+   EvalPriority prio = PrioWatchlistDefer-(long)(1000*clause->watch_relevance);
+   if (OutputLevel >= 1)
    {
-      return PrioWatchlistPrefer-(long)(1000*clause->watch_relevance);
+      fprintf(GlobalOut, "# WATCHLIST PRIO: %ld ", prio);
+      ClausePrint(GlobalOut, clause, true);
+      fprintf(GlobalOut, "\n");
    }
-   return PrioWatchlistDefer;
+
+   return prio;
 }
 
 /*-----------------------------------------------------------------------

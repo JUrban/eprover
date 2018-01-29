@@ -143,6 +143,57 @@ static double watch_progress_update(Clause_p watch_clause,
    return relevance;
 }
 
+static double watch_parents_relevance(Clause_p clause)
+{
+   PStackPointer i, sp;
+   DerivationCodes op;
+   Clause_p parent;
+   double relevance = 0.0;
+   int parents = 0;
+   
+   
+   if (!clause->derivation)
+   {
+      if (ClauseQueryProp(clause, CPInitial))
+      {
+         return 0.0;
+      }
+      Error("Clause has no derivation.  Are you running with -p option?", USAGE_ERROR);
+   }
+   
+   sp = PStackGetSP(clause->derivation);
+   i = 0;
+   while (i<sp)
+   {
+      op = PStackElementInt(clause->derivation, i);
+      i++;
+      
+      if(DCOpHasCnfArg1(op))
+      {
+         parent = PStackElementP(clause->derivation, i);
+         relevance += parent->watch_relevance;
+         parents++;
+      }
+      if(DCOpHasArg1(op))
+      {
+         i++;
+      }
+
+      if(DCOpHasCnfArg2(op))
+      {
+         parent = PStackElementP(clause->derivation, i);
+         relevance += parent->watch_relevance;
+         parents++;
+      }
+      if(DCOpHasArg2(op))
+      {
+         i++;
+      }
+   }
+
+   return (parents>0) ? (relevance/parents) : 0.0;
+}
+
 static void watch_progress_print(NumTree_p watch_progress)
 {
    NumTree_p proof;
@@ -240,11 +291,25 @@ static long remove_subsumed(GlobalIndices_p indices,
    }
    PStackFree(stack);
 
-   if ((OutputLevel >= 1) && (best_proof_no >= 0))
+   if (watch_progress && *watch_progress)
    {
-      fprintf(GlobalOut, "# Watchlist clause relevance: %1.3f: proof: %ld: ", subsumer->clause->watch_relevance, best_proof_no);
-      ClausePrint(GlobalOut, subsumer->clause, true);
-      fprintf(GlobalOut, "\n");
+      double parents_relevance = watch_parents_relevance(subsumer->clause);
+      double decay_factor = 0.5;
+      double combined_relevance = subsumer->clause->watch_relevance + (decay_factor*parents_relevance);
+
+      if ((OutputLevel >= 1))
+      {
+         fprintf(GlobalOut, "# WATCHLIST RELEVANCE: relevance=%1.3f(=%1.3f+%1.3f*%1.3f); proof=%ld; clause=", 
+            combined_relevance,
+            subsumer->clause->watch_relevance,
+            decay_factor,
+            parents_relevance,
+            best_proof_no);
+         ClausePrint(GlobalOut, subsumer->clause, true);
+         fprintf(GlobalOut, "\n");
+      }
+
+      subsumer->clause->watch_relevance = combined_relevance;
    }
 
    return res;
